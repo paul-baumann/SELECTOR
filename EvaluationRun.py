@@ -1,0 +1,125 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+import numpy
+from MetricResults import MetricResults
+from UserData import UserData
+
+class EvaluationRun:
+    
+    task_next_slot_place = 'NextSlotPlace'
+    task_next_slot_transition = 'NextSlotTransition'
+    task_next_place = 'NextPlace'
+    task_next_residence_time = 'NextResidenceTime'
+    
+    task_next_place_daily = 'DailyNextPlace'
+    task_next_slot_transition_daily = 'DailyNextSlotTransition'
+    
+    task_next_place_middle = 'Middle_NextPlace'
+    task_next_place_departure = 'Departure_NextPlace'
+    
+    metric_accuracy = 'accuracy'
+    metric_fscore = 'fscore'
+    metric_MCC = 'MCC'
+    metric_relative_prediction_error = 'Relative prediction error'
+    metric_absolute_prediction_error = 'Absolute prediction error'
+    
+    alg_linear_regression = 'linear_regression'
+    alg_knn = 'knn'
+    alg_perceptron = 'perceptron'
+    alg_decision_tree = 'decision_tree'
+    alg_gradient_boost = 'gradient_boost'
+    alg_svm = 'svm'
+    alg_stupid = 'stupid'
+    
+    #algorithms = [alg_svm];
+    # algorithms = [alg_linear_regression, alg_knn, alg_perceptron, alg_decision_tree, alg_gradient_boost, alg_svm];
+    # algorithms = [alg_knn, alg_perceptron, alg_decision_tree, alg_svm]; #alg_svm
+    #algorithms = [alg_knn, alg_perceptron, alg_decision_tree];
+    algorithms = [alg_knn, alg_decision_tree];
+    
+    # metrics_next_place = [metric_MCC]
+    metrics_next_place = [metric_accuracy, metric_fscore, metric_MCC]
+    #metrics_next_place = [metric_accuracy]
+    
+    metrics_residence_time = [metric_absolute_prediction_error]
+    
+    def __init__ (self):
+        self.task = None;
+        self.task_object = None;
+        
+        self.run_id = 0;
+        self.userData = None;
+        
+        self.available_features = [];
+        self.selected_features = [];
+        
+        self.training_set = None;
+        self.test_set = None;
+        
+        self.start_time = 1;
+        self.end_time = 96;
+        self.when_to_predict_scope = None;
+        self.demo_group = None;
+        
+        self.selected_metric = None;
+        self.selected_algorithm = None;
+        self.selected_feature_code = None;
+        self.prediction_area = None;
+        
+        self.prediction_probabilities = [];
+        self.prediction = [];
+        self.data_ids_for_prediction = [];
+        self.ground_truth = [];
+        
+        self.metric_results = MetricResults();
+        
+        self.random_prediction = [];
+        self.dominating_class_prediction = [];
+        self.histogram_class_prediction = [];
+        
+        self.is_network = True;
+        self.is_temporal = True;
+        self.is_spatial = True;
+        self.is_context = True;
+        
+
+    def copy(self, evaluation_run):
+        self.task = evaluation_run.task;
+        self.task_object = evaluation_run.task_object;
+        
+        self.run_id = evaluation_run.run_id;
+        self.userData = UserData()
+        self.userData.copy(evaluation_run.userData);
+        
+        self.available_features = numpy.copy(evaluation_run.available_features);
+        self.selected_features = numpy.copy(evaluation_run.selected_features);
+        
+        self.training_set = evaluation_run.training_set;
+        self.test_set = evaluation_run.test_set;
+               
+        self.start_time = evaluation_run.start_time;
+        self.end_time = evaluation_run.end_time;
+        self.when_to_predict_scope = evaluation_run.when_to_predict_scope;
+        self.demo_group = evaluation_run.demo_group;
+        
+        self.selected_metric = evaluation_run.selected_metric;
+        self.selected_algorithm = evaluation_run.selected_algorithm;
+        self.selected_feature_code = evaluation_run.selected_feature_code;
+        self.prediction_area = evaluation_run.prediction_area;
+        
+        self.prediction_probabilities = evaluation_run.prediction_probabilities;
+        self.prediction = evaluation_run.prediction;
+        self.data_ids_for_prediction = evaluation_run.data_ids_for_prediction;
+        self.ground_truth = evaluation_run.ground_truth;
+        
+        self.metric_results = evaluation_run.metric_results;
+        
+        self.random_prediction = evaluation_run.random_prediction;
+        self.dominating_class_prediction = evaluation_run.dominating_class_prediction;
+        self.histogram_class_prediction = evaluation_run.histogram_class_prediction;
+        
+        self.is_network = evaluation_run.is_network;
+        self.is_temporal = evaluation_run.is_temporal;
+        self.is_spatial = evaluation_run.is_spatial;
+        self.is_context = evaluation_run.is_context;
+        
