@@ -1,6 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+#############################################
+# This class is a helper to access user data 
+# in the database and to assemble it for SELECTOR.
+#
+# copyright Paul Baumann
+#############################################
+
 import MySQLdb
 import Database_Handler
 import datetime
@@ -137,14 +144,10 @@ class UserDataAssemble:
                 if evaluation_run.task == EvaluationRun.task_next_slot_transition_daily:
                     query = "SELECT * FROM NextSlotTransition_Feature_Matrix WHERE userId = %i and TI9 >= %i AND TI9 <= %i" % (evaluation_run.userData.userId, evaluation_run.start_time, evaluation_run.end_time)
                 else: 
-#                     if evaluation_run.task == EvaluationRun.task_next_place_middle or evaluation_run.task == EvaluationRun.task_next_place_departure:
-#                         query = "SELECT * FROM NextPlace_Feature_Matrix WHERE userId = %i" % (evaluation_run.userData.userId) 
-#                     else:
                     query = "SELECT * FROM %s_Feature_Matrix WHERE userId = %i" % (evaluation_run.task, evaluation_run.userData.userId)
         feature_matrix = dbHandler.select(query)
         feature_matrix = numpy.array(feature_matrix)
         
-#        selected_features = dbHandler.select("SELECT * FROM %s_Pre_Selected_Features WHERE userId = %i" % (evaluation_run.task, evaluation_run.userData.userId))
         if evaluation_run.task == EvaluationRun.task_next_place_daily:
             selected_features = dbHandler.select("SELECT * FROM NextPlace_Pre_Selected_Features WHERE userId = %i" % (evaluation_run.userData.userId))
         else:

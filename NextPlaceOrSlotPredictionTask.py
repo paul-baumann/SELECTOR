@@ -1,5 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+#############################################
+# This class computes the performance in 
+# solving next-slot place, next-place, and 
+# next-slot transition prediction tasks.
+#
+# copyright Paul Baumann
+#############################################
+
 import numpy
 import scipy.io
 import datetime
@@ -20,6 +29,9 @@ from sklearn.metrics import accuracy_score
 
 from pylab import *
 
+## 
+# Main entry point
+## 
 def Run_Analysis(evaluation_run):        
 
     ground_truth = evaluation_run.ground_truth
@@ -122,8 +134,6 @@ def Compute_Custom_Confusion_Matrix(ground_truth, prediction):
         f1[i] = 2 * (precision[i] * recall[i]) / (precision[i] + recall[i])
         mcc[i] = Compute_MCC_Metric(true_positives[i], true_negatives[i], false_positives[i], false_positives[i])
         
-#         Pr_e = ((sum(conf_matrix[i,:]) / number_of_done_predictions) * (sum(conf_matrix[:,i]) / number_of_done_predictions) 
-#                 + (1 - (sum(conf_matrix[i,:]) / number_of_done_predictions)) * (1 - (sum(conf_matrix[:,i]) / number_of_done_predictions)))
         Pr_e = (((true_negatives[i] + false_positives[i]) * (true_negatives[i] + false_negatives[i]) 
                 + (false_negatives[i] + true_positives[i]) * (false_positives[i] + true_positives[i]))
                 / (number_of_done_predictions * number_of_done_predictions))                 
@@ -184,17 +194,10 @@ def Compute_Custom_Confusion_Matrix(ground_truth, prediction):
         my_confusion_matrix.total_recall = 0
         my_confusion_matrix.total_fscore = 0
         
-    # numpy precision, recall, fscore
-#     numpy_metrics = precision_recall_fscore_support(ground_truth, prediction, average='weighted')
-#     my_confusion_matrix.total_precision = numpy_metrics[0]
-#     my_confusion_matrix.total_recall = numpy_metrics[1]
-#     my_confusion_matrix.total_fscore = numpy_metrics[2]
     my_confusion_matrix.total_MCC = sum(new_mcc * class_distribution)
     
     my_confusion_matrix.number_of_classes = number_of_classes
     my_confusion_matrix.number_of_predictions = number_of_done_predictions
-    
-    # print "%s / %s / %s -- %s / %s -- %s / %s -- %s / %s" % (a, numpy_accuracy, my_confusion_matrix.total_accuracy, numpy_metrics[0], my_confusion_matrix.total_precision, numpy_metrics[1], my_confusion_matrix.total_recall, numpy_metrics[2], my_confusion_matrix.total_fscore) 
     
     return my_confusion_matrix
 

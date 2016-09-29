@@ -1,6 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+#############################################
+# This class is a data structure containing 
+# data of a specific subset of a user.
+#
+# copyright Paul Baumann
+#############################################
+
 import numpy
 
 class UserDataSet:

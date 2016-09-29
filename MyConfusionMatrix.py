@@ -1,5 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+#############################################
+# This class is a data structure allowing 
+# to store evaluation results as 
+# a confusion matrix.
+#
+# copyright Paul Baumann
+#############################################
+
 import numpy
 import scipy.io
 import datetime

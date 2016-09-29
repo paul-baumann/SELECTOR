@@ -1,6 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+#############################################
+# This class is a helper and provides methods 
+# to execute a set of machine learning algorithms.
+#
+# copyright Paul Baumann
+#############################################
+
 import MySQLdb
 import Database_Handler
 import datetime

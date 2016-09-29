@@ -1,6 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+#############################################
+# This class is a helper to connect to a database. 
+# It provides several helpful methods.
+#
+# copyright Paul Baumann
+#############################################
+
 import MySQLdb
 import warnings
 
@@ -59,7 +66,6 @@ class Database_Handler:
     # values: a list of values for each field
     #
     # it is to not that the type of each field is determined by the method
-    
     def insert(self, table_name, fields, values):
         
         query = "INSERT INTO %s (" % (table_name)

@@ -1,6 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+#############################################
+# This class is an entry point for SELECTOR.
+# It allows specifying database address and 
+# the experiments that should be executed.
+#
+# copyright Paul Baumann
+#############################################
+
 from multiprocessing import Process
 import os
 import thread
@@ -46,6 +54,11 @@ from pylab import *
 DEBUG_LEVEL = 6
 THREAD_LEVEL = 0
 
+##
+# This method adds a log entry to the database as soon as an experiments has been started.
+# It therefore allows identifying unfinished or cancelled experiments in the database 
+# and thus to easily remove them.
+##
 def Save_Start_Evaluation_Run_To_DB(evaluation_run):
     
     # store prediction run details
@@ -77,14 +90,11 @@ def Save_Start_Evaluation_Run_To_DB(evaluation_run):
     evaluation_run.run_id = insert_id
     
     return evaluation_run
-### RECOVER FROM DB -- DO NOT DELETE
-#     a = numpy.array([1, 2, 3])
-#     b = numpy.array_str(ravel(a), max_line_width=1000000)
-#     b = b[1:len(b)-1]
-#     c = numpy.fromstring(b, sep=' ')
-### RECOVER FROM DB -- DO NOT DELETE
 
 
+## 
+# This method logs the end of an experiment 
+##
 def Save_End_Evaluation_Run_To_DB(evaluation_run):
     
     # store prediction run details
@@ -95,20 +105,17 @@ def Save_End_Evaluation_Run_To_DB(evaluation_run):
     dbHandler.update(query)
 
 
-
+## 
+# This method allows specifying the database
+##
 def Get_DB_Handler():
     
-    #return Database_Handler.Database_Handler("127.0.0.1", 12345, "root", "PW4mak!010", "PaperUbiComp2014")
-    #return Database_Handler.Database_Handler("127.0.0.1", 3306, "root", "PW4mak!010", "PaperUbiComp2014")
-    return Database_Handler.Database_Handler("127.0.0.1", 3306, "root", "PW4mak!010", "TMC2015")
-    #return Database_Handler.Database_Handler("127.0.0.1", 8889, "root", "root", "TMC2015")
-    #return Database_Handler.Database_Handler("127.0.0.1", 8889, "root", "root", "PaperUbiComp2014")
-    # return Database_Handler.Database_Handler("epiwork.hcii.cs.cmu.edu", 3306, "pbaumann", "paul1234", "Nokia_DB")
-    # return Database_Handler.Database_Handler("127.0.0.1", 3306, "pbaumann", "paul1234", "Nokia_DB")
-    # return Database_Handler.Database_Handler("130.83.198.188", 3306, "root", "Heimdall4", "PaperUbiComp2014")
+    return Database_Handler.Database_Handler("ADDRESS", 3306, "USERNAME", "PASSWORD", "DBNAME")
+    
 
-
-
+## 
+# SELECTOR
+##
 def Run_Main_Loop():
     
     start = time()
@@ -124,6 +131,7 @@ def Run_Main_Loop():
     userids = text_file.read().split('\n')
     text_file.close()
     
+    # input parameters allow specifying which tasks for which users should be executed
     start_task = int(sys.argv[1]) - 1
     end_task = int(sys.argv[2])
     start_used_id = int(sys.argv[3]) - 1
@@ -158,7 +166,6 @@ def Run_Main_Loop():
             
             # get data
             if DEBUG_LEVEL > 0:
-                #print "Loading... USER: %s -- after: %s seconds" % (user, time() - start)
                 print("Loading... USER: %s -- after: %s seconds" % (user, time() - start))
             evaluation_run.userData = userData
             user_data_assemble = UserDataAssemble.UserDataAssemble(evaluation_run)
@@ -209,7 +216,10 @@ def Thread_Task(task_id, evaluation_run, algorithms, list_of_metrics, userData, 
         print("Done with TASK: %s, user: %s -- after: %s seconds" % (current_task, user, time() - start))
         print("######################################################")
         
-        
+
+## 
+# Run SELECTOR in different parallel threads for each machine learning algorithm
+##         
 def Thread_Algorithm(evaluation_run, metrics, start):
     
     current_algorithm = evaluation_run.selected_algorithm
@@ -237,7 +247,9 @@ def Thread_Algorithm(evaluation_run, metrics, start):
         print("Done with ALGORITHM: %s, task: %s, user: %s -- after: %s seconds" % (current_algorithm, current_task, user, time() - start))
         print("######################################################")
             
-                    
+## 
+# Run SELECTOR in different parallel threads for each metric
+##                     
 def Thread_Metric(evaluation_run, start):  
     current_metric = evaluation_run.selected_metric
     current_algorithm = evaluation_run.selected_algorithm
@@ -264,7 +276,9 @@ def Thread_Metric(evaluation_run, start):
         print("######################################################")   
     
 
-
+## 
+# Entry point of the script
+##
 if __name__ == "__main__":
     
     Run_Main_Loop()

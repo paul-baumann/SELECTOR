@@ -1,5 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+#############################################
+# This class is an implementation of the 
+# SFFS algorithm to select features.
+#
+# copyright Paul Baumann
+#############################################
+
 from multiprocessing import Process
 import os
 import thread
@@ -184,7 +192,6 @@ class SFFS:
         # run prediction and evaluation
         predictors_pipeline = PredictorsPipeline(evaluation_run)
         evaluation_run = predictors_pipeline.Run_Predictions()
-        # print "Done with %s predictor after : %s seconds" % (evaluation_run.selected_algorithm, time() - start)
         
         # run performance evaluation
         metric_results = self.evaluation_run.task_object.Run_Analysis(evaluation_run)

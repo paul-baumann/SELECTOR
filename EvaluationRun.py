@@ -1,5 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+#############################################
+# This class is a data structure containing all 
+# relevant information of an experiment.
+#
+# copyright Paul Baumann
+#############################################
+
 import numpy
 from MetricResults import MetricResults
 from UserData import UserData
@@ -9,7 +17,6 @@ class EvaluationRun:
     task_next_slot_place = 'NextSlotPlace'
     task_next_slot_transition = 'NextSlotTransition'
     task_next_place = 'NextPlace'
-    task_next_residence_time = 'NextResidenceTime'
     
     task_next_place_daily = 'DailyNextPlace'
     task_next_slot_transition_daily = 'DailyNextSlotTransition'
@@ -20,8 +27,6 @@ class EvaluationRun:
     metric_accuracy = 'accuracy'
     metric_fscore = 'fscore'
     metric_MCC = 'MCC'
-    metric_relative_prediction_error = 'Relative prediction error'
-    metric_absolute_prediction_error = 'Absolute prediction error'
     
     alg_linear_regression = 'linear_regression'
     alg_knn = 'knn'
@@ -31,17 +36,9 @@ class EvaluationRun:
     alg_svm = 'svm'
     alg_stupid = 'stupid'
     
-    #algorithms = [alg_svm];
-    # algorithms = [alg_linear_regression, alg_knn, alg_perceptron, alg_decision_tree, alg_gradient_boost, alg_svm];
-    # algorithms = [alg_knn, alg_perceptron, alg_decision_tree, alg_svm]; #alg_svm
-    #algorithms = [alg_knn, alg_perceptron, alg_decision_tree];
-    algorithms = [alg_knn, alg_decision_tree];
+    algorithms = [alg_knn, alg_perceptron, alg_decision_tree, alg_svm];
     
-    # metrics_next_place = [metric_MCC]
     metrics_next_place = [metric_accuracy, metric_fscore, metric_MCC]
-    #metrics_next_place = [metric_accuracy]
-    
-    metrics_residence_time = [metric_absolute_prediction_error]
     
     def __init__ (self):
         self.task = None;
