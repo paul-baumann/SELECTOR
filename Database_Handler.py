@@ -13,8 +13,7 @@ import warnings
 
 def Get_DB_Handler():
     
-#     return Database_Handler.Database_Handler("ADDRESS", 3306, "USERNAME", "PASSWORD", "DBNAME")
-    return Database_Handler("127.0.0.1", 3306, "root", "PW4mak!010", "TMC2015")
+    return Database_Handler.Database_Handler("ADDRESS", 3306, "USERNAME", "PASSWORD", "DBNAME")
 
 class Database_Handler:
      
