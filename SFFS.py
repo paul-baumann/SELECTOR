@@ -8,43 +8,13 @@
 # copyright Paul Baumann
 #############################################
 
-from multiprocessing import Process
-import os
 import thread
 import threading
-import MySQLdb
-import Database_Handler
-import datetime
-import math
-import array
-import copy
-import sys
-import UserData
-import UserDataSet
-import Mobility_Features_Prediction
+import STEP1_feature_selection
 from EvaluationRun import EvaluationRun
-import NextResidenceTimePredictionTask
-import NextPlaceOrSlotPredictionTask
 from PredictorsPipeline import PredictorsPipeline
-import UserDataAssemble
 from MetricResults import MetricResults
 from time import time
-from datetime import datetime
-from operator import mul
-import numpy
-import scipy.io
-import sklearn.linear_model as linMod
-from sklearn import linear_model
-from sklearn import svm
-from sklearn import neighbors
-from sklearn import naive_bayes
-from sklearn import tree
-from sklearn.decomposition import PCA
-import sklearn
-from sklearn.metrics.pairwise import euclidean_distances
-from sklearn import gaussian_process
-from sklearn.hmm import MultinomialHMM
-from sklearn.ensemble import GradientBoostingClassifier
 
 from pylab import *
 
@@ -65,9 +35,6 @@ class SFFS:
         remaining_features = list(self.evaluation_run.available_features)
         
         over_all_best_performance = 0
-        if self.evaluation_run.task == EvaluationRun.task_next_residence_time:
-            over_all_best_performance = -10000000
-            
         over_all_best_metric_results = MetricResults()
         
         while len(selected_features) < self.max_number_of_features and counter < self.max_number_of_features + 5 and len(remaining_features) > 0:
@@ -88,7 +55,7 @@ class SFFS:
                 evaluation_run.selected_features = list(selected_features)
                 evaluation_run.selected_features.append(feature)
                 
-                if Mobility_Features_Prediction.THREAD_LEVEL > 3:
+                if STEP1_feature_selection.THREAD_LEVEL > 3:
                     eval_thread = threading.Thread( target=self.Thread_Eval, args=(evaluation_run, 
                                                                                    metric_result_per_feature, 
                                                                                    all_metric_results, 
@@ -98,7 +65,7 @@ class SFFS:
                 else:
                     self.Thread_Eval(evaluation_run, metric_result_per_feature, all_metric_results, current_index)
                                                     
-            if Mobility_Features_Prediction.THREAD_LEVEL > 3:
+            if STEP1_feature_selection.THREAD_LEVEL > 3:
                 for thread in threads:
                     thread.join()
             
@@ -141,7 +108,7 @@ class SFFS:
                     evaluation_run.selected_features.remove(feature)
                     # run prediction and evaluation
                     
-                    if Mobility_Features_Prediction.THREAD_LEVEL > 3:
+                    if STEP1_feature_selection.THREAD_LEVEL > 3:
                         eval_thread = threading.Thread( target=self.Thread_Eval, args=(evaluation_run, 
                                                                                    metric_result_per_feature, 
                                                                                    all_metric_results, 
@@ -151,7 +118,7 @@ class SFFS:
                     else:
                         self.Thread_Eval(evaluation_run, metric_result_per_feature, all_metric_results, current_index)                  
                 
-                if Mobility_Features_Prediction.THREAD_LEVEL > 3:
+                if STEP1_feature_selection.THREAD_LEVEL > 3:
                     for thread in threads:
                         thread.join()
                     
@@ -172,12 +139,19 @@ class SFFS:
                     search_backward = False
         
             ## DEBUG
-            if Mobility_Features_Prediction.DEBUG_LEVEL > 3:
+            if STEP1_feature_selection.DEBUG_LEVEL > 3:
                 current_metric = evaluation_run.selected_metric
                 current_algorithm = evaluation_run.selected_algorithm
                 current_task = evaluation_run.task
                 user = evaluation_run.userData.userId
-                print("Run %i DONE with metric: %s, algorithm: %s, task: %s, user: %s after : %s seconds" % (counter, current_metric, current_algorithm, current_task, user, time() - self.start))
+                print("Run %i DONE with metric: %s, algorithm: %s, task: %s, user: %s, day period: %s-%s, after : %s seconds" % (counter, 
+                                                                                                                              current_metric, 
+                                                                                                                              current_algorithm, 
+                                                                                                                              current_task, 
+                                                                                                                              user, 
+                                                                                                                              evaluation_run.start_time,
+                                                                                                                              evaluation_run.end_time,
+                                                                                                                              time() - self.start))
             
             self.evaluation_run.selected_features = selected_features
             self.evaluation_run.metric_results = best_metric_results
@@ -210,9 +184,4 @@ class SFFS:
             return metric_results.fscore
         if evaluation_run.selected_metric == EvaluationRun.metric_MCC:
             return metric_results.MCC
-        if evaluation_run.selected_metric == EvaluationRun.metric_relative_prediction_error:
-            return metric_results.relative_prediction_error
-        if evaluation_run.selected_metric == EvaluationRun.metric_absolute_prediction_error:
-            return metric_results.absolute_prediction_error
-        
         

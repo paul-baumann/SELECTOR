@@ -11,6 +11,11 @@
 import MySQLdb
 import warnings
 
+def Get_DB_Handler():
+    
+#     return Database_Handler.Database_Handler("ADDRESS", 3306, "USERNAME", "PASSWORD", "DBNAME")
+    return Database_Handler("127.0.0.1", 3306, "root", "PW4mak!010", "TMC2015")
+
 class Database_Handler:
      
     def __init__(self,host,port,user,user_password,name):
@@ -117,6 +122,35 @@ class Database_Handler:
         
         return id
         
+    def insertMany(self, table_name, fields, values):
+        
+        values = values.tolist()
+        query = "INSERT INTO %s (" % (table_name)
+        
+        for i in range(len(fields)-1):
+            query = "%s%s," % (query,fields[i])
+        
+        query = "%s%s) VALUES (" % (query,fields[len(fields)-1])
+        
+        for i in range(len(fields)-1):
+            query = "%s%%s," % (query)              
+        query = "%s%%s)" % (query)
+                
+        con = MySQLdb.connect(host=self._database_host, port=self._database_port, user=self._database_user, passwd=self._database_user_password, db=self._database_name)
+        cursor = con.cursor()
+        id = 0
+        try:
+            cursor.executemany(query, values)
+            id = con.insert_id()
+        except MySQLdb.Error, e:        
+            print "Error %d: %s" % (e.args[0])
+            #print query
+        
+        con.autocommit(True)
+        cursor.close()
+        con.close()
+        
+        return id
         
     def select(self, query):
         
@@ -275,11 +309,3 @@ class Database_Handler:
         con.close()
         
         return timestamp 
-    
-    
-    
-    
-    
-    
-    
-    

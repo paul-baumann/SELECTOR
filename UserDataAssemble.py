@@ -8,35 +8,13 @@
 # copyright Paul Baumann
 #############################################
 
-import MySQLdb
-import Database_Handler
-import datetime
-import math
-import array
-import sys
-import UserData
 import UserDataSet
 from EvaluationRun import EvaluationRun
-import Mobility_Features_Prediction
-from time import time
-from datetime import datetime
-from operator import mul
 import numpy
-import scipy.io
-import sklearn.linear_model as linMod
-from sklearn import linear_model
-from sklearn import svm
-from sklearn import neighbors
-from sklearn import naive_bayes
-from sklearn import tree
-from sklearn.decomposition import PCA
-import sklearn
-from sklearn.metrics.pairwise import euclidean_distances
-from sklearn import gaussian_process
-from sklearn.hmm import MultinomialHMM
-from sklearn.ensemble import GradientBoostingClassifier
 
 from pylab import *
+
+import Database_Handler
 
 class UserDataAssemble:
     
@@ -52,27 +30,27 @@ class UserDataAssemble:
         
         feature_matrix = evaluation_run.userData.complete_feature_matrix
         
-        number_of_rows = feature_matrix.shape[0]
-        
         # create data mask
         day_strings = feature_matrix[:, 3:4]
         unique_days = unique(day_strings)
         number_of_days = len(unique_days) 
         
-        # c = numpy.fromstring(b, sep=', ')
-        dbHandler = Mobility_Features_Prediction.Get_DB_Handler()
-        if evaluation_run.task == EvaluationRun.task_next_slot_transition_daily or evaluation_run.task == EvaluationRun.task_next_place_daily:
-            query = "SELECT optimization_array, training_array, test_array FROM %s_Prediction_Run WHERE user_id = %i and start_time = %i and end_time = %i LIMIT 1" % (evaluation_run.task, evaluation_run.userData.userId, evaluation_run.start_time, evaluation_run.end_time)
+        if evaluation_run.task == EvaluationRun.task_next_place_daily:
+            task = evaluation_run.task[5:]
         else:
-            query = "SELECT optimization_array, training_array, test_array FROM %s_Prediction_Run WHERE user_id = %i  LIMIT 1" % (evaluation_run.task, evaluation_run.userData.userId)
+            task = evaluation_run.task
+        query = "SELECT optimization_array, training_array, test_array FROM %s_Prediction_Run WHERE user_id = %i  LIMIT 1" % (task, evaluation_run.userData.userId)
+        
+        dbHandler = Database_Handler.Get_DB_Handler()
         existing_data = dbHandler.select(query)
         existing_data = numpy.array(existing_data)
-        
+
+        ## A partition exists
         if existing_data.shape[0] > 0:
             optimization_idx = numpy.fromstring(existing_data[0,0], sep=', ').astype(int)
             training_idx = numpy.fromstring(existing_data[0,1], sep=', ').astype(int)
             test_idx = numpy.fromstring(existing_data[0,2], sep=', ').astype(int)
-        else:
+        else: ## No partition found --> create a new partition of data into three subsets
             optimization_set_size = self.Get_Optimization_Set_Size(number_of_days);
             training_set_size = self.Get_Training_Set_Size(number_of_days - optimization_set_size);
     
@@ -93,34 +71,37 @@ class UserDataAssemble:
         evaluation_run.available_features = numpy.where(evaluation_run.userData.pre_feature_combination==True)[0]
         evaluation_run.available_features = evaluation_run.available_features.tolist()
         
+        day_of_time_feature_array = feature_matrix[:,22].astype(int)
+        day_period_mask = (day_of_time_feature_array >= evaluation_run.start_time) & (day_of_time_feature_array <= evaluation_run.end_time) 
+        
         # optimization set
         optimization_set = UserDataSet.UserDataSet()
-        optimization_set.timestamps = ravel(feature_matrix[optimization_idx, 2:3])
-        optimization_set.day_string = ravel(feature_matrix[optimization_idx, 3:4])
-        optimization_set.time_string = ravel(feature_matrix[optimization_idx, 4:5])
+        optimization_set.timestamps = ravel(feature_matrix[optimization_idx, 2:3])[day_period_mask[optimization_idx]]
+        optimization_set.day_string = ravel(feature_matrix[optimization_idx, 3:4])[day_period_mask[optimization_idx]]
+        optimization_set.time_string = ravel(feature_matrix[optimization_idx, 4:5])[day_period_mask[optimization_idx]]
         
-        optimization_set.ground_truth = ravel(feature_matrix[optimization_idx, 7:8]).astype(float)
-        optimization_set.feature_matrix = feature_matrix[optimization_idx, 8:feature_matrix.shape[1]]
+        optimization_set.ground_truth = (ravel(feature_matrix[optimization_idx, 7:8]).astype(float))[day_period_mask[optimization_idx]]
+        optimization_set.feature_matrix = (feature_matrix[optimization_idx, 8:feature_matrix.shape[1]])[day_period_mask[optimization_idx],:]
         optimization_set.rows_mask = optimization_idx
         
         # training set
         training_set = UserDataSet.UserDataSet()
-        training_set.timestamps = ravel(feature_matrix[training_idx, 2:3])
-        training_set.day_string = ravel(feature_matrix[training_idx, 3:4])
-        training_set.time_string = ravel(feature_matrix[training_idx, 4:5])
+        training_set.timestamps = ravel(feature_matrix[training_idx, 2:3])[day_period_mask[training_idx]]
+        training_set.day_string = ravel(feature_matrix[training_idx, 3:4])[day_period_mask[training_idx]]
+        training_set.time_string = ravel(feature_matrix[training_idx, 4:5])[day_period_mask[training_idx]]
         
-        training_set.ground_truth = ravel(feature_matrix[training_idx, 7:8]).astype(float)
-        training_set.feature_matrix = feature_matrix[training_idx, 8:feature_matrix.shape[1]]
+        training_set.ground_truth = (ravel(feature_matrix[training_idx, 7:8]).astype(float))[day_period_mask[training_idx]]
+        training_set.feature_matrix = (feature_matrix[training_idx, 8:feature_matrix.shape[1]])[day_period_mask[training_idx],:]
         training_set.rows_mask = training_idx
         
         # test set
         test_set = UserDataSet.UserDataSet()
-        test_set.timestamps = ravel(feature_matrix[test_idx, 2:3])
-        test_set.day_string = ravel(feature_matrix[test_idx, 3:4])
-        test_set.time_string = ravel(feature_matrix[test_idx, 4:5])
+        test_set.timestamps = ravel(feature_matrix[test_idx, 2:3])[day_period_mask[test_idx]]
+        test_set.day_string = ravel(feature_matrix[test_idx, 3:4])[day_period_mask[test_idx]]
+        test_set.time_string = ravel(feature_matrix[test_idx, 4:5])[day_period_mask[test_idx]]
         
-        test_set.ground_truth = ravel(feature_matrix[test_idx, 7:8]).astype(float)
-        test_set.feature_matrix = feature_matrix[test_idx, 8:feature_matrix.shape[1]]
+        test_set.ground_truth = (ravel(feature_matrix[test_idx, 7:8]).astype(float))[day_period_mask[test_idx]]
+        test_set.feature_matrix = (feature_matrix[test_idx, 8:feature_matrix.shape[1]])[day_period_mask[test_idx],:]
         test_set.rows_mask = test_idx
         
         
@@ -134,27 +115,23 @@ class UserDataAssemble:
         
     def Get_User_Data_From_Database(self, evaluation_run):
         
-        dbHandler = Mobility_Features_Prediction.Get_DB_Handler()
-        if evaluation_run.task == EvaluationRun.task_next_residence_time: #  OR (SI1 = 0 AND ground_truth <= 8)
-            query = "SELECT * FROM %s_Feature_Matrix WHERE userId = %i AND (SI1 > 0)" % (evaluation_run.task, evaluation_run.userData.userId)
+        dbHandler = Database_Handler.Get_DB_Handler()
+#             query = "SELECT * FROM NextPlace_Feature_Matrix WHERE userId = %i and TI9 >= %i AND TI9 <= %i" % (evaluation_run.userData.userId, evaluation_run.start_time, evaluation_run.end_time)
+        if evaluation_run.task == EvaluationRun.task_next_place_daily:
+            task = evaluation_run.task[5:]
         else:
-            if evaluation_run.task == EvaluationRun.task_next_place_daily:
-                 query = "SELECT * FROM NextPlace_Feature_Matrix WHERE userId = %i and TI9 >= %i AND TI9 <= %i" % (evaluation_run.userData.userId, evaluation_run.start_time, evaluation_run.end_time)
-            else: 
-                if evaluation_run.task == EvaluationRun.task_next_slot_transition_daily:
-                    query = "SELECT * FROM NextSlotTransition_Feature_Matrix WHERE userId = %i and TI9 >= %i AND TI9 <= %i" % (evaluation_run.userData.userId, evaluation_run.start_time, evaluation_run.end_time)
-                else: 
-                    query = "SELECT * FROM %s_Feature_Matrix WHERE userId = %i" % (evaluation_run.task, evaluation_run.userData.userId)
+            task = evaluation_run.task 
+        
+        query = "SELECT * FROM %s_Feature_Matrix WHERE userId = %i" % (task, evaluation_run.userData.userId)
         feature_matrix = dbHandler.select(query)
         feature_matrix = numpy.array(feature_matrix)
         
         if evaluation_run.task == EvaluationRun.task_next_place_daily:
-            selected_features = dbHandler.select("SELECT * FROM NextPlace_Pre_Selected_Features WHERE userId = %i" % (evaluation_run.userData.userId))
+            task = evaluation_run.task[5:]
         else:
-            if evaluation_run.task == EvaluationRun.task_next_slot_transition_daily:
-                selected_features = dbHandler.select("SELECT * FROM NextSlotTransition_Pre_Selected_Features WHERE userId = %i" % (evaluation_run.userData.userId))
-            else:
-                selected_features = dbHandler.select("SELECT * FROM %s_Pre_Selected_Features WHERE userId = %i" % (evaluation_run.task, evaluation_run.userData.userId))
+            task = evaluation_run.task
+        selected_features = dbHandler.select("SELECT * FROM %s_Pre_Selected_Features WHERE userId = %i" % (task, evaluation_run.userData.userId))
+            
         selected_features = numpy.array(selected_features);
         selected_features = selected_features[:, 2:selected_features.shape[1]];
         evaluation_run.userData.pre_feature_combination = ravel(selected_features > 0);

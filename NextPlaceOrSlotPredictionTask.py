@@ -10,21 +10,12 @@
 #############################################
 
 import numpy
-import scipy.io
-import datetime
-import math
-import array
-import sys
-import Mobility_Features_Prediction
+import Database_Handler
 from MetricResults import MetricResults
 from MyConfusionMatrix import MyConfusionMatrix
 from EvaluationRun import EvaluationRun
-from time import time
 from collections import Counter
-from datetime import datetime
-from operator import mul
 from sklearn.metrics import confusion_matrix
-from sklearn.metrics import precision_recall_fscore_support
 from sklearn.metrics import accuracy_score
 
 from pylab import *
@@ -57,7 +48,7 @@ def Run_Analysis(evaluation_run):
         dominating_class_confusion_matrix = Compute_Custom_Confusion_Matrix(ground_truth, dominating_class_prediction)
         
         # get metric results
-        if evaluation_run.task == EvaluationRun.task_next_slot_transition or evaluation_run.task == EvaluationRun.task_next_slot_transition_daily:
+        if evaluation_run.task == EvaluationRun.task_next_slot_transition:
             metric_results = Compute_Metric_for_Specific_Class(1, confusion_matrix, evaluation_run)
             random_metric_results = Compute_Metric_for_Specific_Class(1, random_confusion_matrix, evaluation_run)
             histogram_class_metric_results = Compute_Metric_for_Specific_Class(1, histogram_class_confusion_matrix, evaluation_run)
@@ -176,7 +167,7 @@ def Compute_Custom_Confusion_Matrix(ground_truth, prediction):
     mask_nans_fscore = isnan(new_fscore)
     new_fscore[mask_nans_fscore] = REPLACE_VALUE
      
-    my_confusion_matrix.total_accuracy = sum(ravel(accuracy) * class_distribution)
+#     my_confusion_matrix.total_accuracy = sum(ravel(accuracy) * class_distribution)
     my_confusion_matrix.total_precision = sum(new_precision * class_distribution)
     my_confusion_matrix.total_recall = sum(new_recall * class_distribution)
     my_confusion_matrix.total_fscore = 2 * (my_confusion_matrix.total_precision * my_confusion_matrix.total_recall) / (my_confusion_matrix.total_precision + my_confusion_matrix.total_recall)
@@ -307,6 +298,6 @@ def Save_To_DB(evaluation_run, is_final):
     values.append(metric_results.MCC)
     values.append(metric_results.frequency_of_top_class)
     
-    dbHandler = Mobility_Features_Prediction.Get_DB_Handler() 
+    dbHandler = Database_Handler.Get_DB_Handler() 
     dbHandler.insert("%s_Prediction_Result_Analysis" % (evaluation_run.task), fields, values)
-      
+    

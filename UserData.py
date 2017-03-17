@@ -9,7 +9,6 @@
 #############################################
 
 import numpy
-
 from UserDataSet import UserDataSet
 
 class UserData:

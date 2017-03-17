@@ -19,24 +19,27 @@ class EvaluationRun:
     task_next_place = 'NextPlace'
     
     task_next_place_daily = 'DailyNextPlace'
-    task_next_slot_transition_daily = 'DailyNextSlotTransition'
-    
-    task_next_place_middle = 'Middle_NextPlace'
-    task_next_place_departure = 'Departure_NextPlace'
     
     metric_accuracy = 'accuracy'
     metric_fscore = 'fscore'
     metric_MCC = 'MCC'
     
-    alg_linear_regression = 'linear_regression'
+    alg_logistic_regression = 'logistic_regression'
     alg_knn = 'knn'
+    alg_knn_dyn = 'knn_dyn'
     alg_perceptron = 'perceptron'
     alg_decision_tree = 'decision_tree'
     alg_gradient_boost = 'gradient_boost'
     alg_svm = 'svm'
+    alg_naivebayes = 'naive_bayes'
     alg_stupid = 'stupid'
     
-    algorithms = [alg_knn, alg_perceptron, alg_decision_tree, alg_svm];
+    ## baselines
+    alg_random = 'random'
+    alg_majority = 'majority'
+    alg_histogram = 'histogram'
+    
+    algorithms = [alg_knn_dyn, alg_perceptron, alg_decision_tree, alg_svm];
     
     metrics_next_place = [metric_accuracy, metric_fscore, metric_MCC]
     

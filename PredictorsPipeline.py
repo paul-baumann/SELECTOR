@@ -8,35 +8,14 @@
 # copyright Paul Baumann
 #############################################
 
-import MySQLdb
-import Database_Handler
-import datetime
-import math
-import array
-import sys
-import UserData
-import UserDataSet
-from scipy.stats import rv_discrete
-import Mobility_Features_Prediction
 from collections import Counter
 from EvaluationRun import EvaluationRun
-from time import time
-from datetime import datetime
-from operator import mul
-from numpy.random import random_sample
 import numpy
-import scipy.io
-import sklearn.linear_model as linMod
 from sklearn import linear_model
 from sklearn import svm
 from sklearn import neighbors
 from sklearn import naive_bayes
 from sklearn import tree
-from sklearn.decomposition import PCA
-import sklearn
-from sklearn.metrics.pairwise import euclidean_distances
-from sklearn import gaussian_process
-from sklearn.hmm import MultinomialHMM
 from sklearn.ensemble import GradientBoostingClassifier
 
 from pylab import *
@@ -99,10 +78,18 @@ class PredictorsPipeline:
             return evaluation_run
         
         try:
-            # Linear regression
-            if evaluation_run.selected_algorithm == EvaluationRun.alg_linear_regression:
+            # Naive bayes
+            if evaluation_run.selected_algorithm == EvaluationRun.alg_naivebayes:
+                evaluation_run.prediction_probabilities, evaluation_run.prediction = self.Run_NBPredictor(training_feature_matrix, test_feature_matrix, training_ground_truth)
+                
+            # Logistic regression
+            if evaluation_run.selected_algorithm == EvaluationRun.alg_logistic_regression:
                 evaluation_run.prediction_probabilities, evaluation_run.prediction = self.Run_LRPredictor(training_feature_matrix, test_feature_matrix, training_ground_truth)
             
+            # kNN DYN-K  
+            if evaluation_run.selected_algorithm == EvaluationRun.alg_knn_dyn:
+                evaluation_run.prediction_probabilities, evaluation_run.prediction = self.Run_KNN_DYN_Predictor(training_feature_matrix, test_feature_matrix, training_ground_truth) 
+                
             # kNN    
             if evaluation_run.selected_algorithm == EvaluationRun.alg_knn:
                 evaluation_run.prediction_probabilities, evaluation_run.prediction = self.Run_KNNPredictor(training_feature_matrix, test_feature_matrix, training_ground_truth) 
@@ -127,13 +114,23 @@ class PredictorsPipeline:
             if evaluation_run.selected_algorithm == EvaluationRun.alg_stupid:
                 evaluation_run.prediction_probabilities, evaluation_run.prediction = self.Run_StupidPredictor(training_feature_matrix, test_feature_matrix, training_ground_truth)
             
-            evaluation_run.random_prediction = self.Run_RandomPredictor(test_feature_matrix, training_ground_truth)
-            evaluation_run.dominating_class_prediction = self.Run_DominatingClassPredictor(test_feature_matrix, training_ground_truth)
+            # Random
+            if evaluation_run.selected_algorithm == EvaluationRun.alg_random:
+                evaluation_run.prediction_probabilities, evaluation_run.prediction = self.Run_RandomPredictor(test_feature_matrix, training_ground_truth)
             
-            if evaluation_run.task == EvaluationRun.task_next_residence_time:
-                evaluation_run.dominating_class_prediction = self.Run_MedianPredictor(test_feature_matrix, training_ground_truth)
-            else:
-                evaluation_run.histogram_class_prediction = self.Run_HistogramClassPredictor(test_feature_matrix, training_ground_truth)
+            # Histogram
+            if evaluation_run.selected_algorithm == EvaluationRun.alg_histogram:
+                evaluation_run.prediction_probabilities, evaluation_run.prediction = self.Run_HistogramClassPredictor(test_feature_matrix, training_ground_truth)
+                
+            # Majority
+            if evaluation_run.selected_algorithm == EvaluationRun.alg_majority:
+                evaluation_run.prediction_probabilities, evaluation_run.prediction = self.Run_DominatingClassPredictor(test_feature_matrix, training_ground_truth)
+                
+            # compute kappa 
+            _, evaluation_run.random_prediction = self.Run_RandomPredictor(test_feature_matrix, training_ground_truth)
+            _, evaluation_run.histogram_class_prediction = self.Run_HistogramClassPredictor(test_feature_matrix, training_ground_truth)
+            _, evaluation_run.dominating_class_prediction = self.Run_DominatingClassPredictor(test_feature_matrix, training_ground_truth)
+            
         except MemoryError:
             print ">>>>>> MEMORY ERROR -- COUND NOT COMPLETE: %s" % (evaluation_run.selected_algorithm)
             evaluation_run.ground_truth = []
@@ -146,22 +143,48 @@ class PredictorsPipeline:
         return evaluation_run
     
     
+    def Run_NBPredictor(self, training_feature_matrix, test_feature_matrix, training_ground_truth):
+        
+        training_ground_truth = ravel(training_ground_truth)
+        NB_model = naive_bayes.GaussianNB()
+        NB_model.fit(training_feature_matrix, training_ground_truth) 
+        NB_predictions = NB_model.predict(test_feature_matrix)
+        probabilities = NB_model.predict_proba(test_feature_matrix)
+        probabilities = amax(probabilities, axis=1)
+        
+        return ravel(probabilities), ravel(NB_predictions.reshape(NB_predictions.shape[0], 1))
+    
+    
     def Run_LRPredictor(self, training_feature_matrix, test_feature_matrix, training_ground_truth):
         
         training_ground_truth = ravel(training_ground_truth)
-        lr_model = sklearn.linear_model.LogisticRegression(penalty='l1', dual=False, tol=0.0001, C=1.0, fit_intercept=True, intercept_scaling=1, class_weight=None)
+        lr_model = linear_model.LogisticRegression(n_jobs = -1)
         lr_model.fit(training_feature_matrix, training_ground_truth)
         lr_predictions = lr_model.predict(test_feature_matrix)
-        probabilities = lr_predictions.predict_proba(test_feature_matrix)
+        probabilities = lr_model.predict_proba(test_feature_matrix)
         probabilities = amax(probabilities, axis=1)
         
         return ravel(probabilities), lr_predictions.reshape(lr_predictions.shape[0], 1)
     
+    
+    def Run_KNN_DYN_Predictor(self, training_feature_matrix, test_feature_matrix, training_ground_truth):
+        
+        training_ground_truth = ravel(training_ground_truth)
+        number_of_instances = len(training_ground_truth)
+        optimal_k = max(int(sqrt(number_of_instances)), 1)
+
+        knn_model = neighbors.KNeighborsClassifier(n_neighbors=optimal_k, n_jobs = -1) # , metric='minkowski'
+        knn_model.fit(training_feature_matrix, training_ground_truth)
+        knn_predictions = knn_model.predict(test_feature_matrix)
+        probabilities = knn_model.predict_proba(test_feature_matrix)
+        probabilities = amax(probabilities, axis=1)
+        
+        return ravel(probabilities), knn_predictions.reshape(knn_predictions.shape[0], 1)
         
     def Run_KNNPredictor(self, training_feature_matrix, test_feature_matrix, training_ground_truth):
         
         training_ground_truth = ravel(training_ground_truth)
-        knn_model = sklearn.neighbors.KNeighborsClassifier(n_neighbors=3, weights='uniform', algorithm='auto', leaf_size=30, p=3) # , metric='minkowski'
+        knn_model = neighbors.KNeighborsClassifier(n_neighbors=3, n_jobs = -1) # , metric='minkowski'
         knn_model.fit(training_feature_matrix, training_ground_truth)
         knn_predictions = knn_model.predict(test_feature_matrix)
         probabilities = knn_model.predict_proba(test_feature_matrix)
@@ -173,7 +196,7 @@ class PredictorsPipeline:
     def Run_PerceptronPredictor(self, training_feature_matrix, test_feature_matrix, training_ground_truth):
         
         training_ground_truth = ravel(training_ground_truth)
-        perceptron_model = sklearn.linear_model.Perceptron(penalty=None, alpha=0.0001, fit_intercept=True, n_iter=5, shuffle=False, verbose=0, eta0=1.0, n_jobs=1, random_state=0, class_weight=None, warm_start=False)
+        perceptron_model = linear_model.Perceptron(shuffle=False, n_jobs=-1)
         perceptron_model.fit(training_feature_matrix, training_ground_truth)
         perceptron_predictions = perceptron_model.predict(test_feature_matrix)
         #probabilities = perceptron_model.predict_proba(test_feature_matrix)
@@ -184,7 +207,7 @@ class PredictorsPipeline:
     def Run_DecisionTreePredictor(self, training_feature_matrix, test_feature_matrix, training_ground_truth):
         
         training_ground_truth = ravel(training_ground_truth)
-        dt_model = sklearn.tree.DecisionTreeClassifier()
+        dt_model = tree.DecisionTreeClassifier()
         dt_model.fit(training_feature_matrix, training_ground_truth)
         dt_predictions = dt_model.predict(test_feature_matrix)
         probabilities = dt_model.predict_proba(test_feature_matrix)
@@ -206,7 +229,7 @@ class PredictorsPipeline:
     def Run_SVMPredictor(self, training_feature_matrix, test_feature_matrix, training_ground_truth):
         
         training_ground_truth = ravel(training_ground_truth)
-        SVM_model = svm.SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0, degree=3, gamma=0.0, kernel='rbf', max_iter=-1, probability=True,  shrinking=True, tol=0.001, verbose=False)
+        SVM_model = svm.SVC(probability=True)
         SVM_model.fit(training_feature_matrix, training_ground_truth) 
         SVM_predictions = SVM_model.predict(test_feature_matrix)
         probabilities = SVM_model.predict_proba(test_feature_matrix)
@@ -217,7 +240,7 @@ class PredictorsPipeline:
     
     def Run_StupidPredictor(self, training_feature_matrix, test_feature_matrix, training_ground_truth):
         
-        stupid_predictions = test_set.feature_matrix[:,21]
+        stupid_predictions = test_feature_matrix.feature_matrix[:,21]
         return [], stupid_predictions.reshape(stupid_predictions.shape[0], 1)
     
     
@@ -227,7 +250,7 @@ class PredictorsPipeline:
         unique_ground_truth = numpy.unique(training_ground_truth)        
         random_prediction = unique_ground_truth[numpy.random.randint(len(unique_ground_truth), size=number_of_output_elements)]
          
-        return random_prediction
+        return [], random_prediction
     
     def Run_DominatingClassPredictor(self, test_feature_matrix, training_ground_truth):
         
@@ -238,7 +261,7 @@ class PredictorsPipeline:
         
         dominating_class_prediction = [most_common_element] * number_of_output_elements;
         
-        return dominating_class_prediction
+        return [], dominating_class_prediction
     
     def Run_HistogramClassPredictor(self, test_feature_matrix, training_ground_truth): 
         
@@ -252,7 +275,7 @@ class PredictorsPipeline:
         bins[len(bins) - 1] = 1.1
         histogram_class_prediction = unique_values[np.digitize(random_sample(number_of_output_elements), bins)]
         
-        return histogram_class_prediction
+        return [], histogram_class_prediction
     
     def Run_MedianPredictor(self, test_feature_matrix, training_ground_truth):
         
