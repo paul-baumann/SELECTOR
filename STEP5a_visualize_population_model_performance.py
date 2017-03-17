@@ -3,7 +3,7 @@
 
 #############################################
 # This class prints the performance achieved
-# by the candidate individual models.
+# by the population models.
 #
 # copyright Paul Baumann
 #############################################

@@ -1,6 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+#############################################
+# This class creates candidate 
+# population models.
+#
+# copyright Paul Baumann
+#############################################
+
 import thread
 import threading
 from time import time

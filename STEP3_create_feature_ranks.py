@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 #############################################
-# This class prints the performance achieved
-# by the candidate individual models.
+# This class computes feature ranks out of 
+# all individual models.
 #
 # copyright Paul Baumann
 #############################################

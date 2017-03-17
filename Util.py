@@ -1,5 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+#############################################
+# This class contains useful functions 
+# and fields.
+#
+# copyright Paul Baumann
+#############################################
+
 import Database_Handler
 import numpy
 

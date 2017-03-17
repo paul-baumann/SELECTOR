@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 
 #############################################
-# This class prints the performance achieved
-# by the candidate individual models.
+# This class visualizes performance 
+# differences between population models 
+# derived for different day periods of time 
+# and those derived for the entire day.
 #
 # copyright Paul Baumann
 #############################################

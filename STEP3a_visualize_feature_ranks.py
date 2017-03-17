@@ -1,6 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+#############################################
+# This class visualizes feature ranks.
+#
+# copyright Paul Baumann
+#############################################
 
 import matplotlib as mlt
 SHOW = False

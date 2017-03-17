@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 #############################################
-# This class prints the performance achieved
-# by the candidate individual models.
+# This class computes population 
+# models out of candidates.
 #
 # copyright Paul Baumann
 #############################################
